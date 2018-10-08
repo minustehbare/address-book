@@ -27,6 +27,9 @@ namespace AddressBook
       {
         configuration.RootPath = "ClientApp/build";
       });
+
+      services.AddDistributedMemoryCache();
+      services.AddSession();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -45,6 +48,7 @@ namespace AddressBook
       app.UseHttpsRedirection();
       app.UseStaticFiles();
       app.UseSpaStaticFiles();
+      app.UseSession();
       app.UseMvc();
 
       app.UseSpa(spa =>
