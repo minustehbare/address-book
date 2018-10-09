@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using AddressBook.Storage;
+using Microsoft.AspNetCore.Http;
 
 namespace AddressBook
 {
@@ -30,6 +32,8 @@ namespace AddressBook
 
       services.AddDistributedMemoryCache();
       services.AddSession();
+      services.AddSingleton<IContactsStore, ContactsSessionStore>();
+      services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

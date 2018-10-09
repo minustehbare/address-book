@@ -34,6 +34,7 @@ export class Contact extends React.Component {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        id: this.props.id,
         firstName: this.state.firstName,
         lastName: this.state.lastName,
         email: this.state.email,

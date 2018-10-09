@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AddressBook.Models;
+using AddressBook.Storage;
 
 namespace AddressBook.Controllers
 {
@@ -14,11 +15,18 @@ namespace AddressBook.Controllers
   [ApiController]
   public class ContactsController : ControllerBase
   {
+    private readonly IContactsStore _contactsStore;
+
+    public ContactsController(IContactsStore store)
+    {
+      _contactsStore = store;
+    }
+
     [HttpGet]
     [Route(template: "")]
     public IEnumerable<Contact> Contacts()
     {
-      return GetContacts();
+      return _contactsStore.GetContacts();
     }
 
     [HttpPost]
@@ -27,10 +35,10 @@ namespace AddressBook.Controllers
     {
       if (ModelState.IsValid && (!string.IsNullOrWhiteSpace(value: model.Email) || !string.IsNullOrWhiteSpace(value: model.Phone)))
       {
-        List<Contact> contacts = GetContacts();
-        contacts.Add(item: new Contact(contact: model));
-        SetContacts(contacts: contacts);
-        return new StatusCodeResult(statusCode: StatusCodes.Status201Created);
+        if (_contactsStore.Create(contact: new Contact(contact: model)))
+        {
+          return new StatusCodeResult(statusCode: StatusCodes.Status201Created);
+        }
       }
 
       return new StatusCodeResult(statusCode: StatusCodes.Status400BadRequest);
@@ -40,39 +48,28 @@ namespace AddressBook.Controllers
     [Route(template: "{id}")]
     public StatusCodeResult DeleteContact(Guid id)
     {
-      List<Contact> contacts = GetContacts();
-      contacts.Remove(item: contacts.Where(x => x.Id == id).FirstOrDefault());
-      SetContacts(contacts: contacts);
-      return new StatusCodeResult(statusCode: StatusCodes.Status204NoContent);
-    }
-
-    [HttpPut]
-    [Route(template: "{id}")]
-    public StatusCodeResult EditContact(Contact model, Guid id)
-    {
-      if (ModelState.IsValid && (!string.IsNullOrWhiteSpace(value: model.Email) || !string.IsNullOrWhiteSpace(value: model.Phone)))
+      Contact contact = _contactsStore.FindById(id: id);
+      if (_contactsStore.Delete(contact: contact))
       {
-        List<Contact> contacts = GetContacts();
-        Contact toEdit = contacts.Where(x => x.Id == id).FirstOrDefault();
-        toEdit.Update(newInfo: model);
-        SetContacts(contacts: contacts);
         return new StatusCodeResult(statusCode: StatusCodes.Status204NoContent);
       }
 
       return new StatusCodeResult(statusCode: StatusCodes.Status400BadRequest);
     }
 
-    [NonAction]
-    private List<Contact> GetContacts()
+    [HttpPut]
+    [Route(template: "{id}")]
+    public StatusCodeResult EditContact(Contact model)
     {
-      string s = HttpContext.Session.GetString(key: "contacts");
-      return s != null ? ((JArray)JsonConvert.DeserializeObject(value: s)).ToObject<List<Contact>>() : new List<Contact>();
-    }
+      if (ModelState.IsValid && (!string.IsNullOrWhiteSpace(value: model.Email) || !string.IsNullOrWhiteSpace(value: model.Phone)))
+      {
+        if (_contactsStore.Update(contact: model))
+        {
+          return new StatusCodeResult(statusCode: StatusCodes.Status204NoContent);
+        }
+      }
 
-    [NonAction]
-    private void SetContacts(List<Contact> contacts)
-    {
-      HttpContext.Session.SetString(key: "contacts", value: JsonConvert.SerializeObject(value: contacts));
+      return new StatusCodeResult(statusCode: StatusCodes.Status400BadRequest);
     }
   }
 }
